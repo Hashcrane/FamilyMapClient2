@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
+import android.widget.Toolbar;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -26,7 +27,6 @@ import static larso12.familymap.ClientUtilities.concatName;
 
 public class SearchActivity extends AppCompatActivity {
 
-    private View view;
     private SearchView searchView;
     private RecyclerView recyclerView;
     private RecyclerAdapter recyclerAdapter;
@@ -42,11 +42,13 @@ public class SearchActivity extends AppCompatActivity {
         eventResults = new ArrayList<>();
 
         setContentView(R.layout.activity_search);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle(R.string.searchActivityLabel);
 
-        recyclerView = view.findViewById(R.id.searchRecyclerView);
-        searchView = view.findViewById(R.id.search_bar);
+
+
+        recyclerView = findViewById(R.id.searchRecyclerView);
+        searchView = findViewById(R.id.search_bar);
 
         searchView.setIconifiedByDefault(false);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -54,7 +56,14 @@ public class SearchActivity extends AppCompatActivity {
             public boolean onQueryTextSubmit(String query) {
                 findPeople(query);
                 findEvents(query);
-                return false;
+
+                if (recyclerAdapter == null) {
+                    recyclerAdapter = new RecyclerAdapter(personResults, eventResults);
+                    recyclerView.setAdapter(recyclerAdapter);
+                } else {
+                    recyclerAdapter.notifyDataSetChanged();
+                }
+                return true;
             }
 
             @Override
@@ -64,12 +73,7 @@ public class SearchActivity extends AppCompatActivity {
             }
         });
 
-        if (recyclerAdapter == null) {
-            recyclerAdapter = new RecyclerAdapter(personResults, eventResults);
-            recyclerView.setAdapter(recyclerAdapter);
-        } else {
-            recyclerAdapter.notifyDataSetChanged();
-        }
+
     }
 
     private void findPeople(String query) {

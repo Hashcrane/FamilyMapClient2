@@ -28,14 +28,14 @@ import static larso12.familymap.ClientUtilities.concatName;
 import static larso12.familymap.ClientUtilities.sortByYear;
 
 public class PersonActivity extends AppCompatActivity {
-    private View view;
+
     private static final String TAG = "PersonActivity";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle(R.string.personActivityLabel);
 
         Intent intent = getIntent();
@@ -46,9 +46,9 @@ public class PersonActivity extends AppCompatActivity {
             throw new IllegalArgumentException("Unverified Person accessed");
         }
         Person person = cache.getFilteredPersons().get(personID);
-        TextView fName = view.findViewById(R.id.FNamePersonInput);
-        TextView lName = view.findViewById(R.id.LNamePersonInput);
-        TextView gender = view.findViewById(R.id.GenderPersonInput);
+        TextView fName = findViewById(R.id.FNamePersonInput);
+        TextView lName = findViewById(R.id.LNamePersonInput);
+        TextView gender = findViewById(R.id.GenderPersonInput);
 
         fName.setText(person.getF_name());
         lName.setText(person.getL_name());
@@ -57,7 +57,7 @@ public class PersonActivity extends AppCompatActivity {
         } else {
             gender.setText(R.string.female);
         }
-        ExpandableListView listView = view.findViewById(R.id.expandListPerson);
+        ExpandableListView listView = findViewById(R.id.expandListPerson);
 
         listView.setAdapter(new ExpandListAdapter(cache.getPersonIDToEvents().get(personID),
                 cache.getPersonActRelatedPersonList(person), person));
@@ -134,7 +134,7 @@ public class PersonActivity extends AppCompatActivity {
         public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater layoutInflater = (LayoutInflater) getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = layoutInflater.inflate(R.layout.person_group_view, parent, false);
+                convertView = layoutInflater.inflate(R.layout.expand_list_title, parent, false);
             }
             TextView listTitle = convertView.findViewById(R.id.listGroupTitle);
 
@@ -185,7 +185,7 @@ public class PersonActivity extends AppCompatActivity {
         private void initializeItemView(View itemView, final int childPosition, int POSITION) {
             TextView top;
             TextView bottom;
-            ImageView image = view.findViewById(R.id.personGroupIconView);
+            ImageView image = itemView.findViewById(R.id.personGroupIconView);
 
             switch (POSITION) {
                 case PERSONS_POSITION:
@@ -217,6 +217,8 @@ public class PersonActivity extends AppCompatActivity {
                     Cache cache = Cache.getInstance();
                     bottom = itemView.findViewById(R.id.personGroupTextBottom);
                     bottom.setText(concatName(cache.getFilteredPersons().get(events.get(childPosition).getPersonID())));
+
+                    image.setImageResource(R.drawable.birth_event_24dp);
 
                     itemView.setOnClickListener(new View.OnClickListener() {
                         @Override

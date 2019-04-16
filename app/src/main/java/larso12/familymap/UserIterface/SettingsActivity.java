@@ -4,10 +4,13 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -16,6 +19,7 @@ import android.widget.Toast;
 import java.io.IOException;
 
 import larso12.familymap.Model.Cache;
+import larso12.familymap.Model.SettingsCache;
 import larso12.familymap.R;
 import larso12.familymap.ServerAccess.ServerProxy;
 import services.event.EventRequest;
@@ -29,9 +33,9 @@ import services.person.PersonResponse;
  */
 public class SettingsActivity extends AppCompatActivity {
 
-    private View view;
 
     private boolean isLoggedIn;
+    private final String TAG = "SettingsActivity";
 
     private String drawableColors[] = {"Green", "Blue", "Red", "Yellow"};
 
@@ -56,15 +60,17 @@ public class SettingsActivity extends AppCompatActivity {
     private String currentMapType;
     private ArrayAdapter<String> adapterMapType;
 
+    private SettingsCache sCache = SettingsCache.getCache();
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle(R.string.settingsActivityLabel);
 
         initializeResources();
-        TextView logout = view.findViewById(R.id.logoutView);
+        TextView logout = findViewById(R.id.logoutView);
         logout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -78,11 +84,12 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        TextView resync = view.findViewById(R.id.syncDataView);
+        TextView resync = findViewById(R.id.syncDataView);
         resync.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Cache cache = Cache.getInstance();
+                cache.clearAll();
                 EventRequest eventRequest = new EventRequest(cache.getAuthToken());
                 GetEventsTask getEventsTask = new GetEventsTask();
                 getEventsTask.execute(eventRequest);
@@ -94,6 +101,31 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        for (int i = 0; i < drawableColors.length; ++i) {
+            if (sCache.getColorLifeLines().equals(drawableColors[i])){
+                spLifeLines.setSelection(i);
+            }
+            if (sCache.getColorFamilyTreeLines().equals(drawableColors[i])){
+                spFamilyTreeLines.setSelection(i);
+            }
+            if (sCache.getColorSpouseLines().equals(drawableColors[i])) {
+                spSpouseLines.setSelection(i);
+            }
+        }
+        for (int i = 0; i < mapTypes.length; ++i) {
+            if (sCache.getCurrentMapType().equals(mapTypes[i])) {
+                spMapType.setSelection(i);
+                break;
+            }
+        }
+
+        showSpouseLines.setChecked(sCache.isShowSpouseLines());
+        showFamilyTreeLines.setChecked(sCache.isShowFamilyTreeLines());
+        showLifeLines.setChecked(sCache.isShowLifeLines());
+    }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -111,6 +143,7 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 colorLifeLines = adapterColorsLifeLines.getItem(position);
+                sCache.setColorLifeLines(colorLifeLines);
             }
 
             @Override
@@ -118,6 +151,14 @@ public class SettingsActivity extends AppCompatActivity {
 
             }
         });
+
+        showLifeLines.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                sCache.setShowLifeLines(b);
+            }
+        });
+
         spFamilyTreeLines = (Spinner) findViewById(R.id.SpinnerFamilyLines);
         showFamilyTreeLines = findViewById(R.id.ShowFamilyLines);
         adapterColorsFamilyTree = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
@@ -128,11 +169,19 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 colorFamilyTreeLines = adapterColorsFamilyTree.getItem(position);
+                sCache.setColorFamilyTreeLines(colorFamilyTreeLines);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
 
+            }
+        });
+
+        showFamilyTreeLines.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                sCache.setShowFamilyTreeLines(b);
             }
         });
 
@@ -146,11 +195,19 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 colorSpouseLines = adapterColorsSpouseLines.getItem(position);
+                sCache.setColorSpouseLines(colorSpouseLines);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
 
+            }
+        });
+
+        showSpouseLines.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                sCache.setShowSpouseLines(b);
             }
         });
 
@@ -162,6 +219,7 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 currentMapType = adapterMapType.getItem(position);
+                sCache.setCurrentMapType(currentMapType);
             }
 
             @Override
@@ -241,14 +299,16 @@ public class SettingsActivity extends AppCompatActivity {
         Cache cache = Cache.getInstance();
         if (!cache.getAllPersons().isEmpty() && !cache.getAllEvents().isEmpty()) {
             isLoggedIn = true;
+            Log.i(TAG, "Resynced: starting main activity");
             cache.sortAll();
             Intent intent = new Intent(this, MainActivity.class);
             intent.putExtra("isLoggedIn", isLoggedIn);
-            startActivity(intent);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            NavUtils.navigateUpTo(this, intent);
 
         } else {
             isLoggedIn = false;
-            Toast.makeText(view.getContext(), R.string.resyncFailed, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.resyncFailed, Toast.LENGTH_LONG).show();
         }
     }
 }

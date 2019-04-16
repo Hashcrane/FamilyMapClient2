@@ -15,18 +15,23 @@ public class ClientUtilities {
         StringBuilder sb = new StringBuilder();
         sb.append(event.getEventType()).append(": ").append(event.getCity()).append(", ");
         sb.append(event.getCountry()).append(" ").append("(").append(event.getYear()).append(")");
-        return sb.toString().toLowerCase();
+        return sb.toString();
     }
 
     public static ArrayList<Event> sortByYear(ArrayList<Event> events) {
         ArrayList<Event> sorted = new ArrayList<>();
         ArrayList<Integer> years = new ArrayList<>();
+        for (Event event: events) {
+            years.add(event.getYear());
+        }
         Collections.sort(years);
         int count = 0;
         while (sorted.size() < events.size()) {
             for (Event event : events) {
+                if (count >= years.size()) break;
                 if (event.getYear() == years.get(count)) {
                     sorted.add(event);
+                    ++count;
                 }
             }
         }

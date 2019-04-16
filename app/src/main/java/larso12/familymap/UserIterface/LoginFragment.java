@@ -494,7 +494,8 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
                         cache.getCurrentUserPerson().getL_name();
                 sb.append(name);
                 sb.append(R.string.loginSuccessMessage);
-                Toast.makeText(view.getContext(), sb.toString(), Toast.LENGTH_LONG).show();
+                String s = sb.toString();
+                Toast.makeText(view.getContext(), s, Toast.LENGTH_LONG).show();
             } else if (registerSuccess) {
                 String name = cache.getCurrentUserPerson().getF_name() + " " +
                         cache.getCurrentUserPerson().getL_name();

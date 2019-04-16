@@ -20,6 +20,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
+        <uses-library android:name = "org.apache.http.legacy" android:required = "false" />
 
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
@@ -33,7 +34,9 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
-        <activity android:name=".UserIterface.MainActivity">
+        <activity android:name=".UserIterface.MainActivity"
+            android:launchMode="singleTop">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -42,12 +45,27 @@
         </activity>
 
         <activity android:name=".UserIterface.SettingsActivity"
-            android:parentActivityName=".UserIterface.MainActivity">
+            android:parentActivityName=".UserIterface.MainActivity"
+            android:launchMode="singleTop">
         </activity>
 
         <activity android:name=".UserIterface.PersonActivity"
             android:parentActivityName=".UserIterface.MainActivity">
         </activity>
+
+        <activity android:name=".UserIterface.EventActivity"
+            android:parentActivityName=".UserIterface.MainActivity">
+        </activity>
+
+        <activity android:name=".UserIterface.FilterActivity"
+            android:parentActivityName=".UserIterface.MainActivity"
+            android:launchMode="singleTop">
+        </activity>
+
+        <activity android:name=".UserIterface.SearchActivity"
+            android:parentActivityName=".UserIterface.MainActivity">
+        </activity>
+
     </application>
 
 </manifest>

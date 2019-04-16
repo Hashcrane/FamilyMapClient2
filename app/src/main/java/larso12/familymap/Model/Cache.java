@@ -1,5 +1,7 @@
 package larso12.familymap.Model;
 
+import com.google.android.gms.maps.model.Marker;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,11 +62,19 @@ public class Cache {
         return cache;
     }
 
+    private Marker marker;
     private Tree personTree;
     private User currentUser;
     private Person currentUserPerson;
     private String authToken;
 
+    public Marker getMarker() {
+        return marker;
+    }
+
+    public void setMarker(Marker marker) {
+        this.marker = marker;
+    }
     public String getServerHost() {
         return serverHost;
     }
@@ -157,6 +167,7 @@ public class Cache {
      * to be called when resyncing or logging in
      */
     public void clearAll() {
+        marker = null;
         filteredPersons.clear();
         allPersons.clear();
         allEvents.clear();

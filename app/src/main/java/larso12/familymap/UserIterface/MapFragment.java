@@ -1,6 +1,7 @@
 package larso12.familymap.UserIterface;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -22,15 +23,15 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import static com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import static larso12.familymap.ClientUtilities.concatEvent;
 import static larso12.familymap.ClientUtilities.concatName;
 import static larso12.familymap.ClientUtilities.sortByYear;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Map;
 
 import larso12.familymap.Model.Cache;
@@ -43,7 +44,7 @@ import models.Person;
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private static final String TAG = "MapFragment";
-    static final float WIDTH_START = 10;
+    static final float WIDTH_START = 15;
 
     private enum LineType {SPOUSE_LINE, FAMILY_LINE, LIFE_STORY_LINE}
 
@@ -53,13 +54,40 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap map;
     private View view;
-    private Marker selectedMarker;
     private boolean fromEventsAct;
     private Event selectedEvent;
+    private ArrayList<Polyline> polylines = new ArrayList<>();
 
+    private GoogleMap.OnMarkerClickListener  markerClickListener;
 
+    {
+        markerClickListener = new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                Cache cache = Cache.getInstance();
+                removePolyLines();
+                cache.setMarker(marker);
 
-    @Override
+                updateMarkerInfo(marker, null);
+                Event event = (Event) marker.getTag();
+                centerMap(event);
+
+                SettingsCache sCache = SettingsCache.getSettingsCache();
+                if (sCache.isShowLifeLines()) {
+
+                    drawLifeStoryLines(createRelatedEventList(cache.getFilteredPersons().get(event.getPersonID())));
+                }
+                if (sCache.isShowSpouseLines()) {
+                    drawSpouseLines(event);
+                }
+                if (sCache.isShowFamilyTreeLines()) {
+                    drawFamilyTreeLinesStart(event);
+                }
+                return true;
+            }
+        };
+    }
+
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
@@ -76,6 +104,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        super.onCreateView(inflater, container, savedInstanceState);
+//
 
         view = inflater.inflate(R.layout.fragment_map, container, false);
 
@@ -95,6 +126,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         } else {
 
         }
+        if (Cache.getInstance().getMarker() == null) {
+            TextView textView = view.findViewById(R.id.mapTextName);
+            textView.setText(R.string.mapFragMessage);
+        }
         return view;
     }
 
@@ -109,15 +144,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         switch (item.getItemId()) {
             case R.id.settings_button:
                 Intent intent = new Intent(getActivity(), SettingsActivity.class);
-                startActivity(intent);
+                getActivity().startActivity(intent);
                 return true;
             case R.id.filter_button:
                 Intent intent1 = new Intent(getActivity(), FilterActivity.class);
-                startActivity(intent1);
+                getActivity().startActivity(intent1);
                 return true;
             case R.id.search_button:
                 Intent intent2 = new Intent(getActivity(), SearchActivity.class);
-                startActivity(intent2);
+                getActivity().startActivity(intent2);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -128,19 +163,54 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
+        map.getUiSettings().setZoomControlsEnabled(true);
         startMap();
     }
 
     void startMap() {
-        zoomMap(10);
+        zoomMap(1);
         setMapType();
         addMarkers();
         setMarkerListener();
 
         if (fromEventsAct) {
             centerMap(selectedEvent);
-            updateMarkerInfo(null, selectedEvent);
+            updateMarkerInfo(Cache.getInstance().getMarker(), selectedEvent);
         }
+        Marker marker = Cache.getInstance().getMarker();
+        if (marker != null) {
+            markerClickListener.onMarkerClick(marker);
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
     }
 
     void setMapType() {
@@ -182,11 +252,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         Cache cache = Cache.getInstance();
 
         for (Map.Entry<String, Event> entry: cache.getCurrentDisplayedEvents().entrySet()) {
-            if (cache.getBirthEvents().containsKey(entry.getValue().getPersonID())){
+            if (cache.getBirthEvents().containsValue(entry.getValue())){
                 addSingleMarker(entry.getValue(), "birth");
-            } else if (cache.getDeathEvents().containsKey(entry.getValue().getPersonID())){
+            } else if (cache.getDeathEvents().containsValue(entry.getValue())){
                 addSingleMarker(entry.getValue(), "death");
-            } else if (cache.getMarriageEvents().containsKey(entry.getValue().getPersonID())){
+            } else if (cache.getMarriageEvents().containsValue(entry.getValue())){
                 addSingleMarker(entry.getValue(), "marriage");
             } else {
                 addSingleMarker(entry.getValue(), "other");
@@ -195,59 +265,45 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     void addSingleMarker(Event event, String eventListType) {
-        int color;
+        float color;
         switch (eventListType) {
             case "birth":
-                color = R.color.birthEventMarkerColor;
+                color = BitmapDescriptorFactory.HUE_YELLOW;
                 break;
             case "death":
-                color = R.color.deathEventMarkerColor;
+                color = BitmapDescriptorFactory.HUE_GREEN;
                 break;
             case "marriage":
-                color = R.color.marriageEventMarkerColor;
+                color = BitmapDescriptorFactory.HUE_RED;
                 break;
             case "other":
-                color = R.color.otherEventMarkerColor;
+                color = BitmapDescriptorFactory.HUE_BLUE;
                 break;
             default:
-                color = R.color.colorPrimary;
+                color = BitmapDescriptorFactory.HUE_RED;
         }
 
         MarkerOptions options = new MarkerOptions().position(extractLatLng(event))
-                .icon(defaultMarker(color));
+                .icon(BitmapDescriptorFactory.defaultMarker(color));
         Marker marker = map.addMarker(options);
         marker.setTag(event);
     }
 
     void setMarkerListener() {
-        map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-                selectedMarker = marker;
-                updateMarkerInfo(marker, null);
-                Event event = (Event) marker.getTag();
-                Cache cache = Cache.getInstance();
-                SettingsCache sCache = SettingsCache.getSettingsCache();
-                if (sCache.isShowLifeLines()) {
-                    ArrayList<Event> drawLifeStoryList = new ArrayList<>();
-                    Collections.copy(drawLifeStoryList, createRelatedEventList(
-                            cache.getFilteredPersons().get(event.getPersonID())));
-                    drawLifeStoryLines(drawLifeStoryList);
-                }
-                if (sCache.isShowSpouseLines()) {
-                    drawSpouseLines(event);
-                }
-                if (sCache.isShowFamilyTreeLines()) {
-                    drawFamilyTreeLinesStart(event);
-                }
-                return false;
-            }
-        });
+        map.setOnMarkerClickListener(markerClickListener);
+    }
+
+    void removePolyLines() {
+        for (Polyline polyline: polylines) {
+            polyline.remove();
+        }
+        polylines.clear();
     }
 
     void drawSpouseLines(Event event) {
         Cache cache = Cache.getInstance();
         Person person = cache.getFilteredPersons().get(event.getPersonID());
+        if (person.getSpouse() == null) return;
         ArrayList<Event> spouseEvents = cache.getPersonIDToEvents().get(person.getSpouse());
         spouseEvents = sortByYear(spouseEvents);
 
@@ -270,7 +326,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
             while (count < events.size()) {
                 for (int i = 0; i < events.size() - 1; ++i) {
+                    if (count >= events.size()) break;
                     drawLine(events.get(i), events.get(i + 1), LineType.LIFE_STORY_LINE, WIDTH_START);
+                    ++count;
                 }
             }
         }
@@ -314,7 +372,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
              }
          }
          for (Event next: nextEvents){
-             drawFamilyTreeLinesRecurse(next, lineType, lineThickness - 0.5f);
+             drawFamilyTreeLinesRecurse(next, lineType, lineThickness - 2f);
          }
      }
 
@@ -377,7 +435,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         .color(getColor(lineType)).width(WIDTH_START);
                 break;
         }
-        map.addPolyline(options);
+        Polyline polyline = map.addPolyline(options);
+        polylines.add(polyline);
     }
 
     LatLng extractLatLng(Event event) {
@@ -415,15 +474,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         switch (color) {
             case "Green":
-                return R.color.green;
+                return Color.GREEN;
             case "Blue":
-                return R.color.blue;
+                return Color.BLUE;
             case "Red":
-                return R.color.red;
+                return Color.RED;
             case "Yellow":
-                return R.color.yellow;
+                return Color.YELLOW;
             default:
-                return R.color.green;
+                return Color.GREEN;
+
         }
     }
 }

@@ -29,6 +29,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (isLoggedIn) startMapFragment();
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle savedInstance) {
         super.onSaveInstanceState(savedInstance);
 
@@ -36,16 +42,17 @@ public class MainActivity extends AppCompatActivity {
 
     public void startMapFragment()
     {
+        isLoggedIn = true;
         FragmentManager fragmentManager = getSupportFragmentManager();
         Fragment fragment = fragmentManager.findFragmentById(R.id.MainActFragContainer);
-
+        setContentView(R.layout.activity_main);
         if (fragment == null) {
             fragment = new MapFragment();
             fragmentManager.beginTransaction().add(R.id.MainActFragContainer, fragment).commit();
         } else {
-            fragmentManager.beginTransaction().remove(fragment).commit();
+
             fragment = new MapFragment();
-            fragmentManager.beginTransaction().add(R.id.MainActFragContainer, fragment).commit();
+            fragmentManager.beginTransaction().replace(R.id.MainActFragContainer, fragment).commit();
         }
     }
 }
