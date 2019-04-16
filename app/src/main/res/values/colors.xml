@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#a24d3b</color>
+    <color name="colorPrimaryDark">#5a1f1b</color>
+    <color name="colorAccent">#ff4f30</color>
+    <color name="birthEventMarkerColor">#ffb749</color>
+    <color name="deathEventMarkerColor">#474747</color>
+    <color name="marriageEventMarkerColor">#ec9b8e</color>
+    <color name="otherEventMarkerColor">#8a2be2</color>
+    <color name="maleColor">#01b9ff</color>
+    <color name="femaleColor">#f995ea</color>
+    <color name="white">#ffffff</color>
+    <color name="green">#15ff00</color>
+    <color name="blue">#0051ff</color>
+    <color name="red">#ff0000</color>
+    <color name="yellow">#f0ff00</color>
+    <color name="backgroundGrey">#cccccc</color>
+</resources>
