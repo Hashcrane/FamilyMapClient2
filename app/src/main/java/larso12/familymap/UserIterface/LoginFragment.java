@@ -326,6 +326,11 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
             }
         });
 
+        serverHost.setText("10.0.2.2");
+        serverPort.setText("8080");
+        userName.setText("u");
+        password.setText("p");
+
         signIn.setOnClickListener(this);
         register.setOnClickListener(this);
 
