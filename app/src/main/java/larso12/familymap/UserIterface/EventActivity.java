@@ -17,6 +17,8 @@ public class EventActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_event);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         Cache cache = Cache.getInstance();
         Intent intent = getIntent();
         Bundle eventBundle = intent.getExtras();

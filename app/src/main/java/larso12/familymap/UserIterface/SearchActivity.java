@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,6 +49,7 @@ public class SearchActivity extends AppCompatActivity {
 
 
         recyclerView = findViewById(R.id.searchRecyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
         searchView = findViewById(R.id.search_bar);
 
         searchView.setIconifiedByDefault(false);
@@ -58,7 +60,7 @@ public class SearchActivity extends AppCompatActivity {
                 findEvents(query);
 
                 if (recyclerAdapter == null) {
-                    recyclerAdapter = new RecyclerAdapter(personResults, eventResults);
+                    recyclerAdapter = new RecyclerAdapter();
                     recyclerView.setAdapter(recyclerAdapter);
                 } else {
                     recyclerAdapter.notifyDataSetChanged();
@@ -69,6 +71,8 @@ public class SearchActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextChange(String newText) {
                 //do nothing
+                eventResults.clear();
+                personResults.clear();
                 return false;
             }
         });
@@ -92,7 +96,9 @@ public class SearchActivity extends AppCompatActivity {
             if (entry.getValue().getCountry().toLowerCase().contains(query.toLowerCase()) ||
                     entry.getValue().getCity().toLowerCase().contains(query.toLowerCase()) ||
                     entry.getValue().getEventType().toLowerCase().contains(query.toLowerCase()) ||
-                    ((Integer) entry.getValue().getYear()).toString().toLowerCase().contains(query.toLowerCase())) {
+                    ((Integer) entry.getValue().getYear()).toString().toLowerCase().contains(query.toLowerCase()) ||
+                    cache.getFilteredPersons().get(entry.getValue().getPersonID()).getF_name().contains(query.toLowerCase()) ||
+                    cache.getFilteredPersons().get(entry.getValue().getPersonID()).getL_name().contains(query.toLowerCase())) {
                 eventResults.add(entry.getValue());
             }
         }
@@ -102,17 +108,19 @@ public class SearchActivity extends AppCompatActivity {
 
         private final ArrayList<EventPersonData> list;
 
-        RecyclerAdapter(ArrayList<Person> persons, ArrayList<Event> events) {
+        RecyclerAdapter() {
             list = new ArrayList<>();
-            for (Person person: persons) {
+            for (Person person: personResults) {
                 EventPersonData data = new EventPersonData(person);
                 list.add(data);
             }
-            for (Event event: events) {
+            for (Event event: eventResults) {
                 EventPersonData data = new EventPersonData(event);
                 list.add(data);
             }
         }
+
+
 
         @NonNull
         @Override

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import models.Event;
 import models.Person;
@@ -51,7 +52,7 @@ public class Cache {
         otherEvents = new HashMap<>();
         personIDToEvents = new HashMap<>();
         personIDToPerson = new HashMap<>();
-        allEventTypes = new HashMap<>();
+        allEventTypes = new TreeMap<>();
         setEventTypes = new HashSet<>();
     }
 
@@ -461,10 +462,15 @@ public class Cache {
                 }
             }
         }
+
         for (Map.Entry<String, ArrayList<Event>> entry: otherEvents.entrySet()) {
             if (allEventTypes.get(entry.getKey()).isShow()) {
                 for (Event event: entry.getValue()) {
-                    currentDisplayedEvents.put(event.getEventID(), event);
+                    if (!filteredPersons.isEmpty()) {
+                        if (filteredPersons.containsKey(event.getPersonID())) {
+                            currentDisplayedEvents.put(event.getEventID(), event);
+                        }
+                    }
                 }
             }
         }
@@ -532,14 +538,14 @@ public class Cache {
             list.add(newRoot.nMom);
             ArrayList<Person> finalPersons = new ArrayList<>();
 
-            for (Node n : list) {
-                if (n.nDad != null) {
-                    list.add(n.nDad);
+            while (!list.isEmpty()) {
+                if (list.get(0).nDad != null) {
+                    list.add(list.get(0).nDad);
                 }
-                if (n.nMom != null) {
-                    list.add(n.nMom);
+                if (list.get(0).nMom != null) {
+                    list.add(list.get(0).nMom);
                 }
-                finalPersons.add(n.currentPerson);
+                finalPersons.add(list.get(0).currentPerson);
                 list.remove(0);
             }
             return finalPersons;

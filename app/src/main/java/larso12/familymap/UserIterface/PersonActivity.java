@@ -30,7 +30,7 @@ import static larso12.familymap.ClientUtilities.sortByYear;
 public class PersonActivity extends AppCompatActivity {
 
     private static final String TAG = "PersonActivity";
-
+    private Cache cache = Cache.getInstance();
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,7 +40,7 @@ public class PersonActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         String personID = intent.getExtras().getString("personID");
-        Cache cache = Cache.getInstance();
+
         if (!cache.getFilteredPersons().containsKey(personID)) {
             Log.e(TAG, "Target person should not be displayed");
             throw new IllegalArgumentException("Unverified Person accessed");
@@ -65,7 +65,7 @@ public class PersonActivity extends AppCompatActivity {
     }
 
     private class ExpandListAdapter extends BaseExpandableListAdapter {
-        private static final int EVENTS_POSITON = 0;
+        private static final int EVENTS_POSITION = 0;
         private static final int PERSONS_POSITION = 1;
 
         private final ArrayList<Event> events;
@@ -74,8 +74,20 @@ public class PersonActivity extends AppCompatActivity {
         private final Person TARGET_PERSON;
 
         ExpandListAdapter(ArrayList<Event> events, ArrayList<Person> persons, Person target) {
-            this.events = sortByYear(events);
-            this.persons = persons;
+            events = sortByYear(events);
+            this.events = new ArrayList<>();
+            for (int i = 0; i < events.size(); ++i) {
+                if (cache.getCurrentDisplayedEvents().containsKey(events.get(i).getEventID())) {
+                    this.events.add(events.get(i));
+                }
+            }
+            this.persons = new ArrayList<>();
+            for (Person person: persons) {
+                if (cache.getFilteredPersons().containsKey(person.getID())) {
+                    this.persons.add(person);
+                }
+            }
+
             this.TARGET_PERSON = target;
         }
 
@@ -89,7 +101,7 @@ public class PersonActivity extends AppCompatActivity {
             switch (groupPosition) {
                 case PERSONS_POSITION:
                     return getString(R.string.personActPersonTitle);
-                case EVENTS_POSITON:
+                case EVENTS_POSITION:
                     return getString(R.string.personActEventTitle);
                 default:
                     throw new IllegalArgumentException("Unrecognized group position");
@@ -101,7 +113,7 @@ public class PersonActivity extends AppCompatActivity {
             switch (groupPosition) {
                 case PERSONS_POSITION:
                     return persons.get(childPosition);
-                case EVENTS_POSITON:
+                case EVENTS_POSITION:
                     return events.get(childPosition);
                 default:
                     throw new IllegalArgumentException("Unrecognized group position");
@@ -113,7 +125,7 @@ public class PersonActivity extends AppCompatActivity {
             switch (groupPosition) {
                 case PERSONS_POSITION:
                     return persons.size();
-                case EVENTS_POSITON:
+                case EVENTS_POSITION:
                     return events.size();
                 default:
                     throw new IllegalArgumentException("Unrecognized group position");
@@ -142,7 +154,7 @@ public class PersonActivity extends AppCompatActivity {
                 case PERSONS_POSITION:
                     listTitle.setText(R.string.personActPersonTitle);
                     break;
-                case EVENTS_POSITON:
+                case EVENTS_POSITION:
                     listTitle.setText(R.string.personActEventTitle);
                     break;
                 default:
@@ -167,14 +179,14 @@ public class PersonActivity extends AppCompatActivity {
                     itemView = layoutInflater.inflate(R.layout.person_group_view, parent, false);
                     initializeItemView(itemView, childPosition, PERSONS_POSITION);
                     break;
-                case EVENTS_POSITON:
+                case EVENTS_POSITION:
                     itemView = layoutInflater.inflate(R.layout.person_group_view, parent, false);
-                    initializeItemView(itemView, childPosition, EVENTS_POSITON);
+                    initializeItemView(itemView, childPosition, EVENTS_POSITION);
                     break;
                 default:
                     throw new IllegalArgumentException("Unrecognized group position");
             }
-           return itemView;
+            return itemView;
         }
 
         @Override
@@ -210,7 +222,7 @@ public class PersonActivity extends AppCompatActivity {
                         }
                     });
                     break;
-                case EVENTS_POSITON:
+                case EVENTS_POSITION:
                     top = itemView.findViewById(R.id.personGroupTextTop);
                     top.setText(concatEvent(events.get(childPosition)));
 
@@ -235,16 +247,18 @@ public class PersonActivity extends AppCompatActivity {
         }
 
 
-
         private String getRelation(Person person) {
-            if (person.getFather().equals(TARGET_PERSON.getID()) || person.getMother().equals(TARGET_PERSON.getID())) {
+            if (TARGET_PERSON == null || person == null) {
+                Log.e(TAG, "Person object is null");
+            }
+            if (TARGET_PERSON.getSpouse().equals(person.getID()) || (person.getFather() == null || person.getMother() == null)) {
+                return "Spouse";
+            } else if (person.getFather().equals(TARGET_PERSON.getID()) || person.getMother().equals(TARGET_PERSON.getID())) {
                 return "Child";
             } else if (TARGET_PERSON.getMother().equals(person.getID())) {
                 return "Mother";
             } else if (TARGET_PERSON.getFather().equals(person.getID())) {
                 return "Father";
-            } else if (TARGET_PERSON.getSpouse().equals(person.getID())) {
-                return "Spouse";
             } else {
                 throw new IllegalArgumentException("Unrelated person found in list");
             }

@@ -3,6 +3,7 @@ package larso12.familymap.UserIterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -27,6 +28,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+
 import static larso12.familymap.ClientUtilities.concatEvent;
 import static larso12.familymap.ClientUtilities.concatName;
 import static larso12.familymap.ClientUtilities.sortByYear;
@@ -57,8 +59,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private boolean fromEventsAct;
     private Event selectedEvent;
     private ArrayList<Polyline> polylines = new ArrayList<>();
+    private ArrayList<Marker> markers = new ArrayList<>();
 
-    private GoogleMap.OnMarkerClickListener  markerClickListener;
+
+    private GoogleMap.OnMarkerClickListener markerClickListener;
 
     {
         markerClickListener = new GoogleMap.OnMarkerClickListener() {
@@ -66,11 +70,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             public boolean onMarkerClick(Marker marker) {
                 Cache cache = Cache.getInstance();
                 removePolyLines();
-                cache.setMarker(marker);
-
-                updateMarkerInfo(marker, null);
                 Event event = (Event) marker.getTag();
-                centerMap(event);
+                cache.setMarker(marker);
+                updateMarkerInfo(marker, null);
+
+
+                selectedEvent = event;
 
                 SettingsCache sCache = SettingsCache.getSettingsCache();
                 if (sCache.isShowLifeLines()) {
@@ -90,16 +95,26 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+
+
         Bundle bundle = this.getArguments();
         if (bundle != null) {
-            fromEventsAct = bundle.getBoolean("fromEventsAct");
-            if (fromEventsAct){
+            fromEventsAct = bundle.getBoolean("fromEventAct");
+            if (fromEventsAct) {
+                setHasOptionsMenu(false);
                 Cache cache = Cache.getInstance();
                 selectedEvent = cache.getCurrentDisplayedEvents().get(bundle.getString("eventID"));
+
+                Marker marker = findMarker(selectedEvent);
+                cache.setMarker(null);
             }
         }
+        if (!fromEventsAct) {
+            setHasOptionsMenu(true);
+            selectedEvent = null;
+        }
     }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -126,7 +141,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         } else {
 
         }
-        if (Cache.getInstance().getMarker() == null) {
+        if (selectedEvent == null) {
             TextView textView = view.findViewById(R.id.mapTextName);
             textView.setText(R.string.mapFragMessage);
         }
@@ -160,6 +175,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     }
 
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
@@ -176,11 +192,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if (fromEventsAct) {
             centerMap(selectedEvent);
             updateMarkerInfo(Cache.getInstance().getMarker(), selectedEvent);
+            markerClickListener.onMarkerClick(findMarker(selectedEvent));
         }
-        Marker marker = Cache.getInstance().getMarker();
-        if (marker != null) {
-            markerClickListener.onMarkerClick(marker);
-        }
+
     }
 
     @Override
@@ -211,6 +225,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onLowMemory() {
         super.onLowMemory();
+    }
+
+    private Marker findMarker(Event event) {
+        for (Marker marker : markers) {
+            if (marker.getTag().equals(event)) {
+                return marker;
+            }
+        }
+        return null;
     }
 
     void setMapType() {
@@ -250,13 +273,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     void addMarkers() {
         Cache cache = Cache.getInstance();
+        markers.clear();
 
-        for (Map.Entry<String, Event> entry: cache.getCurrentDisplayedEvents().entrySet()) {
-            if (cache.getBirthEvents().containsValue(entry.getValue())){
+        for (Map.Entry<String, Event> entry : cache.getCurrentDisplayedEvents().entrySet()) {
+            if (cache.getBirthEvents().containsValue(entry.getValue())) {
                 addSingleMarker(entry.getValue(), "birth");
-            } else if (cache.getDeathEvents().containsValue(entry.getValue())){
+            } else if (cache.getDeathEvents().containsValue(entry.getValue())) {
                 addSingleMarker(entry.getValue(), "death");
-            } else if (cache.getMarriageEvents().containsValue(entry.getValue())){
+            } else if (cache.getMarriageEvents().containsValue(entry.getValue())) {
                 addSingleMarker(entry.getValue(), "marriage");
             } else {
                 addSingleMarker(entry.getValue(), "other");
@@ -264,7 +288,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    void addSingleMarker(Event event, String eventListType) {
+    Marker addSingleMarker(Event event, String eventListType) {
         float color;
         switch (eventListType) {
             case "birth":
@@ -287,6 +311,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 .icon(BitmapDescriptorFactory.defaultMarker(color));
         Marker marker = map.addMarker(options);
         marker.setTag(event);
+        markers.add(marker);
+        return marker;
     }
 
     void setMarkerListener() {
@@ -294,7 +320,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     void removePolyLines() {
-        for (Polyline polyline: polylines) {
+        for (Polyline polyline : polylines) {
             polyline.remove();
         }
         polylines.clear();
@@ -323,11 +349,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         } else {
             int count = 0;
             events = sortByYear(events);
-
+            Cache cache = Cache.getInstance();
             while (count < events.size()) {
                 for (int i = 0; i < events.size() - 1; ++i) {
                     if (count >= events.size()) break;
-                    drawLine(events.get(i), events.get(i + 1), LineType.LIFE_STORY_LINE, WIDTH_START);
+                    if (cache.getCurrentDisplayedEvents().containsKey(events.get(i).getEventID())) {
+                        drawLine(events.get(i), events.get(i + 1), LineType.LIFE_STORY_LINE, WIDTH_START);
+                    }
                     ++count;
                 }
             }
@@ -339,47 +367,46 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     }
 
-     void drawFamilyTreeLinesRecurse(Event event, LineType lineType, Float lineThickness) {
-         Cache cache = Cache.getInstance();
-         Person person = cache.getFilteredPersons().get(event.getPersonID());
+    void drawFamilyTreeLinesRecurse(Event event, LineType lineType, Float lineThickness) {
+        Cache cache = Cache.getInstance();
+        Person person = cache.getFilteredPersons().get(event.getPersonID());
 
-         ArrayList<Event> nextEvents = new ArrayList<>();
-         ArrayList<Event> motherEvents;
-         if (person.getMother() != null) {
-             motherEvents = cache.getPersonIDToEvents().get(person.getMother());
-             motherEvents = sortByYear(motherEvents);
+        ArrayList<Event> nextEvents = new ArrayList<>();
+        ArrayList<Event> motherEvents;
+        if (person.getMother() != null) {
+            motherEvents = cache.getPersonIDToEvents().get(person.getMother());
+            motherEvents = sortByYear(motherEvents);
 
-             for (Event selectEvent : motherEvents) {
-                 if (cache.getCurrentDisplayedEvents().containsKey(selectEvent.getEventID())) {
-                     drawLine(event, selectEvent, lineType, lineThickness);
-                     nextEvents.add(selectEvent);
-                     break;
-                 }
-             }
-         }
+            for (Event selectEvent : motherEvents) {
+                if (cache.getCurrentDisplayedEvents().containsKey(selectEvent.getEventID())) {
+                    drawLine(event, selectEvent, lineType, lineThickness);
+                    nextEvents.add(selectEvent);
+                    break;
+                }
+            }
+        }
 
-         ArrayList<Event> fatherEvents;
-         if (person.getFather() != null) {
-             fatherEvents = cache.getPersonIDToEvents().get(person.getFather());
-             fatherEvents = sortByYear(fatherEvents);
+        ArrayList<Event> fatherEvents;
+        if (person.getFather() != null) {
+            fatherEvents = cache.getPersonIDToEvents().get(person.getFather());
+            fatherEvents = sortByYear(fatherEvents);
 
-             for (Event selectEvent : fatherEvents) {
-                 if (cache.getCurrentDisplayedEvents().containsKey(selectEvent.getEventID())) {
-                     drawLine(event, selectEvent, lineType, lineThickness);
-                     nextEvents.add(selectEvent);
-                     break;
-                 }
-             }
-         }
-         for (Event next: nextEvents){
-             drawFamilyTreeLinesRecurse(next, lineType, lineThickness - 2f);
-         }
-     }
+            for (Event selectEvent : fatherEvents) {
+                if (cache.getCurrentDisplayedEvents().containsKey(selectEvent.getEventID())) {
+                    drawLine(event, selectEvent, lineType, lineThickness);
+                    nextEvents.add(selectEvent);
+                    break;
+                }
+            }
+        }
+        for (Event next : nextEvents) {
+            drawFamilyTreeLinesRecurse(next, lineType, lineThickness - 2f);
+        }
+    }
 
     void updateMarkerInfo(Marker marker, Event event) {
         if (event == null) {
             event = (Event) marker.getTag();
-            centerMap(event);
         }
         final Event passedEvent = event;
         Cache cache = Cache.getInstance();
@@ -412,7 +439,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         });
     }
-
 
 
     private void drawLine(Event point1, Event point2, LineType lineType, Float lineThickness) {
