@@ -58,6 +58,25 @@ public class SettingsCache {
 
     private Set<String> eventTypes;
 
+
+    public void restoreDefaults() {
+        eventTypes.clear();
+        colorLifeLines = "Green";
+        showLifeLines = true;
+        colorSpouseLines = "Blue";
+        showSpouseLines = true;
+        colorFamilyTreeLines = "Red";
+        showFamilyTreeLines = true;
+        currentMapType = "Satellite";
+        showMaleEvents = true;
+        showFemaleEvents = true;
+        showMotherSide = true;
+        showFatherSide = true;
+        showMarriageEvents = true;
+        showDeathEvents = true;
+        showBirthEvents = true;
+    }
+
     public static SettingsCache getCache() {
         return cache;
     }

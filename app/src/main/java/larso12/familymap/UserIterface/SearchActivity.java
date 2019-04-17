@@ -52,6 +52,10 @@ public class SearchActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         searchView = findViewById(R.id.search_bar);
 
+        if (recyclerAdapter == null) {
+            recyclerAdapter = new RecyclerAdapter();
+            recyclerView.setAdapter(recyclerAdapter);
+        }
 
 
         searchView.setIconifiedByDefault(false);
@@ -60,23 +64,16 @@ public class SearchActivity extends AppCompatActivity {
             public boolean onQueryTextSubmit(String query) {
                 findPeople(query);
                 findEvents(query);
+                recyclerAdapter.loadItems();
 
-                if (recyclerAdapter == null) {
-                    recyclerAdapter = new RecyclerAdapter();
-                    recyclerView.setAdapter(recyclerAdapter);
-                } else {
-                    recyclerAdapter.notifyDataSetChanged();
-                }
-
+                recyclerAdapter.notifyDataSetChanged();
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                //do nothing
-                eventResults.clear();
-                personResults.clear();
-                return false;
+
+                return true;
             }
         });
 
@@ -121,7 +118,13 @@ public class SearchActivity extends AppCompatActivity {
         private final ArrayList<EventPersonData> list;
 
         RecyclerAdapter() {
+
             list = new ArrayList<>();
+            loadItems();
+        }
+
+        void loadItems() {
+            list.clear();
             for (Person person: personResults) {
                 EventPersonData data = new EventPersonData(person);
                 list.add(data);
@@ -132,7 +135,10 @@ public class SearchActivity extends AppCompatActivity {
             }
         }
 
-
+        @Override
+        public void registerAdapterDataObserver(@NonNull RecyclerView.AdapterDataObserver observer) {
+            super.registerAdapterDataObserver(observer);
+        }
 
         @NonNull
         @Override
@@ -157,6 +163,7 @@ public class SearchActivity extends AppCompatActivity {
 
         private Event heldEvent;
         private Person heldPerson;
+        private EventPersonData heldData;
 
         private final TextView topText;
         private final TextView bottomText;
@@ -172,6 +179,7 @@ public class SearchActivity extends AppCompatActivity {
         }
 
         void bindItem(EventPersonData data) {
+            heldData = data;
             switch (data.getType()) {
                 case EVENT:
                     heldEvent = data.getEvent();
@@ -196,10 +204,10 @@ public class SearchActivity extends AppCompatActivity {
 
         @Override
         public void onClick(View v) {
-            if (heldEvent != null && heldPerson == null) {
+            if (heldData.getEvent() != null && heldData.getPerson() == null) {
                 Intent intent = new Intent(getApplicationContext(), EventActivity.class);
                 intent.putExtra("eventID", heldEvent.getEventID());
-            } else if (heldEvent == null && heldPerson != null) {
+            } else if (heldData.getEvent() == null && heldData.getPerson() != null) {
                 Intent intent = new Intent(getApplicationContext(), PersonActivity.class);
                 intent.putExtra("personID", heldPerson.getID());
                 startActivity(intent);

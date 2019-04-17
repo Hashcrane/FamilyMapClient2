@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,6 +68,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
     private boolean registerSuccess;
     private boolean loginSuccess;
 
+    private Cache cache = Cache.getInstance();
 
     @Override
     public void onCreate(Bundle savedInstance) {
@@ -328,8 +330,8 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
 
         serverHost.setText("10.0.2.2");
         serverPort.setText("8080");
-        userName.setText("u");
-        password.setText("p");
+        userName.setText("sheila");
+        password.setText("parker");
 
         signIn.setOnClickListener(this);
         register.setOnClickListener(this);
@@ -376,7 +378,6 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
                 lName.getText().toString(), gender, null, null, null);
         User user = new User(person, password.getText().toString(), email.getText().toString());
 
-        Cache cache = Cache.getInstance();
         cache.setCurrentUser(user);
         cache.setCurrentUserPerson(person);
 
@@ -410,17 +411,17 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         protected void onPostExecute(RegisterResponse registerResponse) {
             super.onPostExecute(registerResponse);
             if (registerResponse.getMessage() == null) {
-                Cache cache = Cache.getInstance();
+
                 cache.setAuthToken(registerResponse.getToken());
                 cache.setServerHost(serverHost.getText().toString());
                 cache.setServerPort(serverPort.getText().toString());
+                cache.setCurrentUserPersonID(registerResponse.getPersonID());
                 allowRetrieveData = true;
                 registerSuccess = true;
             } else {
                 Toast.makeText(view.getContext(), registerResponse.getMessage(), Toast.LENGTH_LONG).show();
             }
             if (allowRetrieveData) {
-                Cache cache = Cache.getInstance();
                 EventRequest eventRequest = new EventRequest(cache.getAuthToken());
                 GetEventsTask getEventsTask = new GetEventsTask("register");
                 getEventsTask.execute(eventRequest);
@@ -459,7 +460,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         protected void onPostExecute(LoginResponse loginResponse) {
             super.onPostExecute(loginResponse);
             if (loginResponse.getMessage() == null) {
-                Cache cache = Cache.getInstance();
+
                 cache.setAuthToken(loginResponse.getToken());
                 cache.setCurrentUserPersonID(loginResponse.getPersonID());
                 cache.setServerHost(serverHost.getText().toString());
@@ -470,21 +471,18 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
                 Toast.makeText(view.getContext(), loginResponse.getMessage(), Toast.LENGTH_LONG).show();
             }
             if (allowRetrieveData) {
-                Cache cache = Cache.getInstance();
+
                 EventRequest eventRequest = new EventRequest(cache.getAuthToken());
                 GetEventsTask getEventsTask = new GetEventsTask("login");
                 getEventsTask.execute(eventRequest);
 
-                PersonRequest personRequest = new PersonRequest(cache.getAuthToken());
-                GetPersonsTask getPersonsTask = new GetPersonsTask("login");
-                getPersonsTask.execute(personRequest);
                 allowRetrieveData = false;
             }
         }
     }
 
     private void checkDataRetrieved(String calledFrom) {
-        Cache cache = Cache.getInstance();
+
         if (!cache.getAllPersons().isEmpty() && !cache.getAllEvents().isEmpty()) {
             isLoggedIn = true;
             cache.sortAll();
@@ -506,10 +504,10 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
             }
         } else {
             isLoggedIn = false;
-            if (calledFrom == "register") {
+            if (calledFrom.equals("register")) {
                 Toast.makeText(view.getContext(), R.string.registerFailedMessage, Toast.LENGTH_LONG).show();
             }
-            if (calledFrom == "login") {
+            if (calledFrom.equals("login")) {
                 Toast.makeText(view.getContext(), R.string.loginFailedMessage, Toast.LENGTH_LONG).show();
 
             }
@@ -546,9 +544,11 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
             super.onPostExecute(eventResponse);
             if (eventResponse.getMessage() != null) {
             } else {
-                Cache cache = Cache.getInstance();
                 cache.setAllEvents(eventResponse.getEvents());
             }
+            PersonRequest personRequest = new PersonRequest(cache.getAuthToken());
+            GetPersonsTask getPersonsTask = new GetPersonsTask(calledFrom);
+            getPersonsTask.execute(personRequest);
         }
     }
 
@@ -564,11 +564,9 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         protected void onPostExecute(PersonResponse personResponse) {
             super.onPostExecute(personResponse);
             if (personResponse.getMessage() != null) {
-                //FIXME LOG ERROR
+                Log.e("LOGIN", personResponse.getMessage());
             } else {
-                Cache cache = Cache.getInstance();
                 cache.setAllPersons(personResponse.getPersons());
-                cache.setPersonObject();
                 checkDataRetrieved(calledFrom);
             }
         }

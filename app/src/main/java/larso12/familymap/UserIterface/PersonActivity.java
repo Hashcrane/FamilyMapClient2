@@ -31,6 +31,7 @@ public class PersonActivity extends AppCompatActivity {
 
     private static final String TAG = "PersonActivity";
     private Cache cache = Cache.getInstance();
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,7 +83,7 @@ public class PersonActivity extends AppCompatActivity {
                 }
             }
             this.persons = new ArrayList<>();
-            for (Person person: persons) {
+            for (Person person : persons) {
                 if (cache.getFilteredPersons().containsKey(person.getID())) {
                     this.persons.add(person);
                 }
@@ -251,17 +252,31 @@ public class PersonActivity extends AppCompatActivity {
             if (TARGET_PERSON == null || person == null) {
                 Log.e(TAG, "Person object is null");
             }
-            if (TARGET_PERSON.getSpouse().equals(person.getID()) || (person.getFather() == null || person.getMother() == null)) {
-                return "Spouse";
-            } else if (person.getFather().equals(TARGET_PERSON.getID()) || person.getMother().equals(TARGET_PERSON.getID())) {
+            if (person.getSpouse() == null) {
                 return "Child";
-            } else if (TARGET_PERSON.getMother().equals(person.getID())) {
-                return "Mother";
-            } else if (TARGET_PERSON.getFather().equals(person.getID())) {
-                return "Father";
+            }
+            if (person.getFather() != null && person.getMother() != null) {
+                if (person.getFather().equals(TARGET_PERSON.getID()) || person.getMother().equals(TARGET_PERSON.getID())) {
+                    return "Child";
+                }
+            }
+            if (TARGET_PERSON.getSpouse().equals(person.getID())) {
+                return "Spouse";
+            }
+            if (TARGET_PERSON.getMother() != null) {
+                if (TARGET_PERSON.getMother().equals(person.getID())) {
+                    return "Mother";
+                }
+            }
+            if (TARGET_PERSON.getFather() != null) {
+                if (TARGET_PERSON.getFather().equals(person.getID())) {
+                    return "Father";
+                } else throw new IllegalArgumentException("Unrelated person found in list");
             } else {
                 throw new IllegalArgumentException("Unrelated person found in list");
             }
+
         }
     }
 }
+

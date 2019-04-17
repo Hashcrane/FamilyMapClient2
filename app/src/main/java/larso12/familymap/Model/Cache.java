@@ -199,7 +199,7 @@ public class Cache {
         return filteredPersons;
     }
 
-    public void setPersonObject() {
+    private void setPersonObject() {
         for (Person person : allPersons) {
             if (currentUserPersonID.equals(person.getID())) {
                 currentUserPerson = person;
@@ -234,7 +234,9 @@ public class Cache {
     }
 
     public void setAllPersons(ArrayList<Person> allPersons) {
+
         this.allPersons = allPersons;
+        setPersonObject();
         if (!allPersons.isEmpty()) {
             sortPersons();
         }
@@ -253,6 +255,8 @@ public class Cache {
     }
 
     private void sortEvents() {
+        setEventTypes.clear();
+        allEventTypes.clear();
         if (setEventTypes.add("father's side")) allEventTypes.put("father's side", new FilterData("father's side"));
         if (setEventTypes.add("mother's side")) allEventTypes.put("mother's side", new FilterData("mother's side"));
         if (setEventTypes.add("male events")) allEventTypes.put("male events", new FilterData("male events"));
@@ -332,10 +336,13 @@ public class Cache {
      * currently may iterate over full list multiple times
      */
     private void sortPersons() {
+        //personTree.setRootUser(currentUserPerson);
         while (personTree.numPersons != allPersons.size()) {
             for (Person person : allPersons) {
                 if (person.getID().equals(currentUserPersonID)) {
-                    personTree.setRootUser(person);
+                    if (personTree.rootUser.currentPerson == null) {
+                        personTree.setRootUser(person);
+                    }
                 } else {
                     personTree.addNode(person);
                 }
@@ -555,6 +562,7 @@ public class Cache {
             rootUser.currentPerson = person;
             rootUser.dad = person.getFather();
             rootUser.mom = person.getMother();
+            rootUser.spouse = person.getSpouse();
             numPersons = 1;
         }
 
@@ -573,6 +581,14 @@ public class Cache {
                 if (person.getID().equals(rootUser.dad)) {
                     Node n = new Node(person);
                     rootUser.nDad = n;
+                    ++numPersons;
+                    return true;
+                }
+            }
+            if (rootUser.nSpouse == null) {
+                if (person.getID().equals(rootUser.spouse)) {
+                    Node n = new Node(person);
+                    rootUser.nSpouse = n;
                     ++numPersons;
                     return true;
                 }
@@ -602,6 +618,14 @@ public class Cache {
                     return true;
                 }
             }
+            if (currentNode.spouse == null) {
+                if (person.getID().equals(currentNode.spouse)) {
+                    Node n = new Node(person);
+                    currentNode.nSpouse = n;
+                    ++numPersons;
+                    return true;
+                }
+            }
             if (addNode(person, currentNode.nMom)) return true;
 
             else return addNode(person, currentNode.nDad);
@@ -613,6 +637,8 @@ public class Cache {
             String dad;
             Node nDad;
             Person currentPerson;
+            Node nSpouse;
+            String spouse;
 
             Node() {}
 
@@ -620,6 +646,7 @@ public class Cache {
                 currentPerson = person;
                 dad = person.getFather();
                 mom = person.getMother();
+                spouse = person.getSpouse();
             }
         }
     }

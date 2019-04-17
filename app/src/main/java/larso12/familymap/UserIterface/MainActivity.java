@@ -29,6 +29,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        this.finish();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         if (isLoggedIn) startMapFragment();

@@ -76,9 +76,11 @@ public class SettingsActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Cache cache = Cache.getInstance();
                 cache.clearAll();
+                sCache.restoreDefaults();
                 isLoggedIn = false;
                 Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                 intent.putExtra("isLoggedIn", isLoggedIn);
+                finishAffinity();
                 startActivity(intent);
 
             }
@@ -274,7 +276,6 @@ public class SettingsActivity extends AppCompatActivity {
             } else {
                 Cache cache = Cache.getInstance();
                 cache.setAllPersons(personResponse.getPersons());
-                cache.setPersonObject();
                 checkDataRetrieved();
             }
         }
