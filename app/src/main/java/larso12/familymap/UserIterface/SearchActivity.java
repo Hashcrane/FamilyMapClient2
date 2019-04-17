@@ -52,6 +52,8 @@ public class SearchActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         searchView = findViewById(R.id.search_bar);
 
+
+
         searchView.setIconifiedByDefault(false);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -65,6 +67,7 @@ public class SearchActivity extends AppCompatActivity {
                 } else {
                     recyclerAdapter.notifyDataSetChanged();
                 }
+
                 return true;
             }
 
@@ -81,6 +84,7 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void findPeople(String query) {
+        personResults.clear();
         Cache cache = Cache.getInstance();
         for (Map.Entry<String, Person> entry : cache.getFilteredPersons().entrySet()) {
             if (entry.getValue().getF_name().toLowerCase().contains(query.toLowerCase()) ||
@@ -91,14 +95,22 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void findEvents(String query) {
+        eventResults.clear();
         Cache cache = Cache.getInstance();
         for (Map.Entry<String, Event> entry : cache.getCurrentDisplayedEvents().entrySet()) {
-            if (entry.getValue().getCountry().toLowerCase().contains(query.toLowerCase()) ||
-                    entry.getValue().getCity().toLowerCase().contains(query.toLowerCase()) ||
-                    entry.getValue().getEventType().toLowerCase().contains(query.toLowerCase()) ||
-                    ((Integer) entry.getValue().getYear()).toString().toLowerCase().contains(query.toLowerCase()) ||
-                    cache.getFilteredPersons().get(entry.getValue().getPersonID()).getF_name().contains(query.toLowerCase()) ||
-                    cache.getFilteredPersons().get(entry.getValue().getPersonID()).getL_name().contains(query.toLowerCase())) {
+            Event event = entry.getValue();
+            Person person = cache.getFilteredPersons().get(event.getPersonID());
+            boolean add;
+            if (event.getEventType().toLowerCase().contains(query.toLowerCase())) add = true;
+            else if (event.getCity().toLowerCase().contains(query.toLowerCase())) add = true;
+            else if (event.getCountry().toLowerCase().contains(query.toLowerCase())) add = true;
+            else if (((Integer) event.getYear()).toString().toLowerCase().contains(query.toLowerCase())) add = true;
+            else if (person.getF_name().toLowerCase().contains(query.toLowerCase())) add = true;
+            else if (person.getL_name().toLowerCase().contains(query.toLowerCase())) add = true;
+            else {
+                add = false;
+            }
+            if (add) {
                 eventResults.add(entry.getValue());
             }
         }
